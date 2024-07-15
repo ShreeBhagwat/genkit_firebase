@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Genkit demo</title>
+  </head>
+  <body>
+    <div id="signin" hidden>
+      <button id="signinBtn">Sign in with Google</button>
+    </div>
+    <div id="callGenkit" hidden>
+      Subject: <input type="text" id="subject" />
+      <button id="suggestMenuItem">Suggest a menu theme</button>
+      <p id="menuItem"></p>
+    </div>
+    <script type="module">
+      import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js';
+      import {
+        getAuth,
+        onAuthStateChanged,
+        GoogleAuthProvider,
+        signInWithPopup,
+      } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js';
+      import {
+        getFunctions,
+        httpsCallable,
+      } from 'https://www.gstatic.com/firebasejs/10.10.0/firebase-functions.js';
+
+      const firebaseConfig = await fetch('/__/firebase/init.json');
+      initializeApp(await firebaseConfig.json());
+
+      async function generateMenuItem() {
+        const menuSuggestionFlow = httpsCallable(
+          getFunctions(),
+          'generateCaptions'
+        );
+        const subject = document.querySelector('#subject').value;
+        const response = await menuSuggestionFlow(subject);
+        document.querySelector('#menuItem').innerText = response.data;
+      }
+
+      function signIn() {
+        signInWithPopup(getAuth(), new GoogleAuthProvider());
+      }
+
+      document
+        .querySelector('#signinBtn')
+        .addEventListener('click', signIn);
+      document
+        .querySelector('#suggestMenuItem')
+        .addEventListener('click', generateMenuItem);
+
+      const signinEl = document.querySelector('#signin');
+      const genkitEl = document.querySelector('#callGenkit');
+
+      onAuthStateChanged(getAuth(), (user) => {
+        if (!user) {
+          signinEl.hidden = false;
+          genkitEl.hidden = true;
+        } else {
+          signinEl.hidden = true;
+          genkitEl.hidden = false;
+        }
+      });
+    </script>
+  </body>
+</html>
